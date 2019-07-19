@@ -1,10 +1,16 @@
+// Pressure/depth sensor
+#include <MS5837.h>
+
+// RGB sensor
 #include <SFE_ISL29125.h>
 
+// SD card logging
 #include <SD.h>
 #include <SD_t3.h>
-
-#include <dht.h>
 #include <SPI.h>
+
+// Internal temp/humidity
+#include <dht.h>
 
 #define N 255
 
@@ -33,6 +39,7 @@ const unsigned int DELAY = 1000;
 File LOG;
 dht DHT;
 SFE_ISL29125 RGB;
+
 
 
 // init timer
