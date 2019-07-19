@@ -12,13 +12,16 @@
 
 // define pins
 const unsigned int DHT_PIN = 2;
+const unsigned int EXTERNAL_TEMP_PIN = 10;
 
 // set filename
 char FILENAME[N] = "LOG.TXT";
 
+////////////////////////////////////////
+
 unsigned int LOG_NUMBER = 0;
 
-////////////////////////////////////////
+//OneWire ds(EXTERNAL_TEMP_PIN);
 
 String newFilename;
 
@@ -59,7 +62,7 @@ void setup() {
     Serial.println("RGB sensor initialization failed");
   }
 
-  
+  Serial.println("Time (s), Internal Temp (C), Internal Humidity (%), Red, Green, Blue, External Temp (C)");
 
   // will ya give it a SECOND?!
   delay(DELAY);
@@ -68,8 +71,7 @@ void setup() {
 
 void loop() {
 
-
-  // INTERNAL TEMPERATURE
+  // INTERNAL TEMPERATURE AND HUMIDITY
   // update DHT22 object
   DHT.read22(DHT_PIN);
   
@@ -84,9 +86,12 @@ void loop() {
   unsigned int green = RGB.readGreen();
   unsigned int blue = RGB.readBlue();
 
+  // EXTERNAL TEMPERATURE
+  float externalDegreesCelsius = getExternalTemp();
 
+  // pH
 
-
+  // DEPTH / PRESSURE
 
   
   
@@ -105,6 +110,8 @@ void loop() {
   LOG.print(green);
   LOG.print(",");
   LOG.print(blue);
+  LOG.print(",");
+  LOG.print(externalDegreesCelsius);
 
   LOG.println();
 
@@ -124,6 +131,8 @@ void loop() {
     Serial.print(green);
     Serial.print(",");
     Serial.print(blue);
+    Serial.print(",");
+    Serial.print(externalDegreesCelsius);
     Serial.println();
   }
 
@@ -135,7 +144,7 @@ void loop() {
 void initSD() {
   Serial.print("Initializing SD card... ");
   if (!SD.begin(BUILTIN_SDCARD)) {
-    Serial.println("initialization failed!");
+    Serial.println("NO SD CARD");
     return;
   }
   Serial.println("initialization done.");
