@@ -1,51 +1,65 @@
+#include <SFE_ISL29125.h>
+
 #include <SD.h>
-//#include <SD_t3.h>
+#include <SD_t3.h>
 
 #include <dht.h>
 #include <SPI.h>
 
 #define N 255
 
+///// USER CAN CHANGE VALUES BELOW /////
+
+// define pins
+const unsigned int DHT_PIN = 2;
+
+// set filename
+char FILENAME[N] = "LOG.TXT";
+
+unsigned int LOG_NUMBER = 0;
+
+////////////////////////////////////////
+
+String newFilename;
 
 // set communication rate
 const unsigned int BAUD_RATE = 9600;
 const unsigned int DELAY = 1000;
 
-// define pins
-const unsigned int DHT_PIN = 2;
-
-// create File object
+// create objects
 File LOG;
 dht DHT;
+SFE_ISL29125 RGB;
+
 
 // init timer
 unsigned int seconds = 0;
 
-// get default filename
-const char* FILE_BODY = "LOG";
-const char* EXTENSION = ".TXT";
-const char* DEFAULT_FILENAME = strcat(FILE_BODY, EXTENSION);
-
-// initialize real filename
-char* FILENAME = DEFAULT_FILENAME;
-
-void setup() {
-  delay(5000);
-  
+void setup() { 
   // begin serial communication
   Serial.begin(BAUD_RATE);
 
   // give serial time to initialize
-  delay(5000);
-
-  // get filename
-  FILENAME = getFilename();
-
+  delay(DELAY * 2);
+    
   // initialize SD card
   initSD();
 
+  // initialize filename
+  initFile();
+
   // ensure SD can be written to
   checkSD();
+
+  // initialize RGB sensor
+  if (RGB.init())
+  {
+    Serial.println("RGB sensor initialization successful");
+  } else {
+    Serial.println("RGB sensor initialization failed");
+  }
+
+  
 
   // will ya give it a SECOND?!
   delay(DELAY);
@@ -53,14 +67,28 @@ void setup() {
 }
 
 void loop() {
-  // update DHT22 object
-  int check = DHT.read22(DHT_PIN);
 
+
+  // INTERNAL TEMPERATURE
+  // update DHT22 object
+  DHT.read22(DHT_PIN);
+  
   // get temperature in degrees Celsius
   float internalDegreesCelsius = DHT.temperature;
 
   // get internal humidity percentage
   float internalHumidityPercentage = DHT.humidity;
+
+  // RGB LIGHT LEVELS
+  unsigned int red = RGB.readRed();
+  unsigned int green = RGB.readGreen();
+  unsigned int blue = RGB.readBlue();
+
+
+
+
+
+  
   
   // open file for writing
   LOG = SD.open(FILENAME, FILE_WRITE);
@@ -71,11 +99,33 @@ void loop() {
   LOG.print(internalDegreesCelsius);
   LOG.print(",");
   LOG.print(internalHumidityPercentage);
+  LOG.print(",");
+  LOG.print(red);
+  LOG.print(",");
+  LOG.print(green);
+  LOG.print(",");
+  LOG.print(blue);
 
   LOG.println();
 
   // close file
   LOG.close();
+
+  // write data to serial
+  if (Serial) {
+    Serial.print(seconds);
+    Serial.print(",");
+    Serial.print(internalDegreesCelsius);
+    Serial.print(",");
+    Serial.print(internalHumidityPercentage);
+    Serial.print(",");
+    Serial.print(red);
+    Serial.print(",");
+    Serial.print(green);
+    Serial.print(",");
+    Serial.print(blue);
+    Serial.println();
+  }
 
   // delay and increment timer
   delay(DELAY);
@@ -100,11 +150,6 @@ void checkSD() {
     Serial.print("Writing to ");
     Serial.print(FILENAME);
     Serial.print("... ");
-
-    // write headers
-    for (int i = 0; i < 25; i++)
-      LOG.print("=");
-    LOG.println();
     
     // close the file
     LOG.close();
@@ -116,31 +161,28 @@ void checkSD() {
   }
 }
 
-char* getFilename() {
-  // begin checking at 0
-  int logNumber = 0;
-
-  // init filename
-  char filename[255] = {};
-  filename[255] = strcat(FILE_BODY, EXTENSION);
-  
+void initFile() {
   // open root
   File root = SD.open("/");
-  // iterate over each item
+
+  // create test filename
+  String testFilename = String(FILENAME);
+
+  // iterate over root
   while (true) {
-    // create filename
-    if (logNumber != 0)
-      filename[255] = strcat(FILE_BODY, strcat(logNumber, EXTENSION));
     File entry = root.openNextFile();
+
     if (!entry) {
-      // reached last file - close files and return filename
-      entry.close();
-      root.close();
-      return filename;
+      // reached last file
+      break;
     }
-    if (strcmp(entry.name(), filename)) {
-      // names are the same, try again
-      logNumber++;
+
+    if (  String(entry.name()).equals(testFilename)  ) {
+      LOG_NUMBER++;
+      testFilename = String(LOG_NUMBER) + String(FILENAME);
     }
+  }
+  for (unsigned int i = 0; i < N; i++) {
+    FILENAME[i] = testFilename[i];
   }
 }
