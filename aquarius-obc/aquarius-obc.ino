@@ -274,7 +274,6 @@ float getExternalTemp(void) {
   byte type_s;
   byte data[12];
   byte addr[8];
-  float celsius, fahrenheit;
   
   if ( !ds.search(addr)) {
     Serial.println("No more addresses.");
