@@ -1,4 +1,3 @@
-// Pressure/depth sensor
 #include <MS5837.h>
 #include <Wire.h>
 
