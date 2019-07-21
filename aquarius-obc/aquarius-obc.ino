@@ -30,6 +30,8 @@ String FILE_EXTENSION = ".TXT";
 
 ////////////////////////////////////////
 
+// init timer
+int seconds = 0;
 
 // Create filename vars
 unsigned int FILE_NUMBER_INT = 0;
@@ -39,19 +41,15 @@ String testFilename = FILE_BODY + FILE_NUMBER_STRING + FILE_EXTENSION;
 
 char FILENAME[N] = {};
 
-
 // set communication rate
 const unsigned int BAUD_RATE = 9600;
-const unsigned int DELAY = 1000;
+const unsigned int DELAY= 1000;
 
 // create objects
 File LOG;
 dht DHT;
 SFE_ISL29125 RGB;
 MS5837 sensor;
-
-// init timer
-unsigned int seconds = 0;
 
 void setup() { 
   // begin serial communication
@@ -80,7 +78,6 @@ void setup() {
 
   // will ya give it a SECOND?!
   delay(DELAY);
-  seconds++;
 }
 
 void loop() {
@@ -111,6 +108,9 @@ void loop() {
   float externalDegreesCelsius1 = sensor.temperature(); // deg C - Bar30
   float depth = sensor.depth(); // m
   float altitude = sensor.altitude(); // m above mean sea level
+
+  // get time
+  seconds = (millis() / 1000);
   
   
   // open file for writing
@@ -170,9 +170,8 @@ void loop() {
     Serial.println();
   }
 
-  // delay and increment timer
+  // delay
   delay(DELAY);
-  seconds++;  
 }
 
 void initSD() {
@@ -308,8 +307,6 @@ float getExternalTemp(void) {
   ds.select(addr);
   ds.write(0x44, 1);        // start conversion, with parasite power on at the end
   
-  delay(1000);     // maybe 750ms is enough, maybe not
-  // we might do a ds.depower() here, but the reset will take care of it.
   
   present = ds.reset();
   ds.select(addr);    
