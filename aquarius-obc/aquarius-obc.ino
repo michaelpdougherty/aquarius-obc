@@ -71,7 +71,7 @@ void setup() {
   // initialize pressure, depth, altitude, and external temperature sensor
   initBlueRobotics();
 
-  // Print CSV headers
+  // print headers
   printHeaders();
 
   // will ya give it a SECOND?!
@@ -189,6 +189,8 @@ void checkSD() {
     Serial.print("Writing to ");
     Serial.print(FILENAME);
     Serial.print("... ");
+
+    LOG.println("Time (s), Internal Humidity (%), Internal Temperature (deg C), External Temperature (deg C), Pressure (mbar), Depth (m), Altitude (m), Red, Green, Blue");
     
     // close the file
     LOG.close();
