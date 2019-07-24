@@ -10,19 +10,16 @@
 #include <SD_t3.h>
 #include <SPI.h>
 
-// Internal temp/humidity library
-#include <dht.h>
-
 #define N 255
 
 ///// USER CAN CHANGE VALUES BELOW /////
 
-// define pins
-const unsigned int DHT_PIN = 2; // DHT22 internal temperature and humidity sensor
-
 // set default filename structure
 String FILE_BODY = "LOG";
 String FILE_EXTENSION = ".CSV";
+
+// declare internal LED
+const unsigned int LED = 13;
 
 ////////////////////////////////////////
 
@@ -30,6 +27,7 @@ String FILE_EXTENSION = ".CSV";
 int seconds = 0;
 
 // init failchecks
+int SDfailed = 0;
 int RGBfailed = 0;
 int sensorFailed = 0;
 
@@ -45,13 +43,15 @@ const unsigned int DELAY= 1000;
 
 // create file and sensor objects
 File LOG;
-dht DHT;
 SFE_ISL29125 RGB;
 MS5837 sensor;
 
 void setup() { 
   // begin serial communication
   Serial.begin(BAUD_RATE);
+
+  // init blink
+  pinMode(LED, OUTPUT);
 
   // give serial time to initialize
   delay(DELAY * 2);
@@ -79,20 +79,6 @@ void setup() {
 }
 
 void loop() {
-
- 
-  // INTERNAL TEMPERATURE AND HUMIDITY
-  
-  // update DHT22 object
-  DHT.read22(DHT_PIN);
-  
-  // get temperature in degrees Celsius
-  float internalTemperature = DHT.temperature; // deg C
-
-  // get internal humidity percentage
-  float internalHumidity = DHT.humidity; // %
-
-
   // RGB LIGHT LEVELS
   unsigned int red = RGB.readRed();
   unsigned int green = RGB.readGreen();
@@ -118,10 +104,6 @@ void loop() {
   // write data to file
   LOG.print(seconds);
   LOG.print(",");
-  LOG.print(internalHumidity);
-  LOG.print(",");
-  LOG.print(internalTemperature);
-  LOG.print(",");
   LOG.print(externalTemperature);
   LOG.print(",");
   LOG.print(pressure);
@@ -144,10 +126,6 @@ void loop() {
   if (Serial) {
     Serial.print(seconds);
     Serial.print(",");
-    Serial.print(internalHumidity);
-    Serial.print(",");
-    Serial.print(internalTemperature);
-    Serial.print(",");
     Serial.print(externalTemperature);
     Serial.print(",");
     Serial.print(pressure);
@@ -167,14 +145,22 @@ void loop() {
   // attempt to initialize failed sensors
   checkSensors();
 
-  // delay
-  delay(DELAY);
+  // blink if SD card initialized
+  if (!SDfailed) {
+    digitalWrite(LED, HIGH);   // set the LED on
+    delay(500);
+    digitalWrite(LED, LOW);    // set the LED off
+    delay(500);
+  } else {
+    delay(1000);
+  }
 }
 
 void initSD() {
   Serial.print("Initializing SD card... ");
   if (!SD.begin(BUILTIN_SDCARD)) {
     Serial.println("NO SD CARD");
+    SDfailed = 1;
     return;
   }
   Serial.println("initialization done.");
@@ -190,7 +176,7 @@ void checkSD() {
     Serial.print(FILENAME);
     Serial.print("... ");
 
-    LOG.println("Time (s), Internal Humidity (%), Internal Temperature (deg C), External Temperature (deg C), Pressure (mbar), Depth (m), Altitude (m), Red, Green, Blue");
+    LOG.println("Time (s), External Temperature (deg C), Pressure (mbar), Depth (m), Altitude (m), Red, Green, Blue");
     
     // close the file
     LOG.close();
@@ -265,11 +251,11 @@ void initBlueRobotics() {
   }
 
 void printHeaders() {
-    Serial.println("Time (s), Internal Humidity (%), Internal Temperature (deg C), External Temperature (deg C), Pressure (mbar), Depth (m), Altitude (m), Red, Green, Blue");
+    Serial.println("Time (s), External Temperature (deg C), Pressure (mbar), Depth (m), Altitude (m), Red, Green, Blue");
 }
 
 void checkSensors() {
-  if (RGB.readRed() == 65535) {
+  if (RGB.readRed() == 65535 || RGB.readRed() == 0 || RGB.readGreen() == 65535 || RGB.readGreen() == 0 || RGB.readBlue() == 65535 || RGB.readBlue() == 0) {
     RGBfailed = 1;
   }
   
